@@ -30,7 +30,7 @@ class AsyncDNSResolver:
     def __init__(
         self,
         ttl_seconds: int = 3600,
-        timeout: float = 3.0,
+        timeout: float = 5.0,
         nameservers: Optional[List[str]] = None,
     ) -> None:
         self.ttl_seconds = ttl_seconds
@@ -89,12 +89,11 @@ class AsyncDNSResolver:
             self._inflight.pop(normalized, None)
 
     async def _lookup_records(self, domain: str) -> DomainDNSResult:
-        mx_task = self._query_mx(domain)
-        spf_task = self._query_spf(domain)
-        dmarc_task = self._query_dmarc(domain)
-
-        mx_hosts, mx_error = await mx_task
-        has_spf, has_dmarc = await asyncio.gather(spf_task, dmarc_task)
+        (mx_hosts, mx_error), has_spf, has_dmarc = await asyncio.gather(
+            self._query_mx(domain),
+            self._query_spf(domain),
+            self._query_dmarc(domain),
+        )
 
         return DomainDNSResult(
             domain=domain,
