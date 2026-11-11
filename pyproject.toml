@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gtm-email-verification-engine"
+version = "0.1.0"
+description = "High-throughput asynchronous email verification engine with MX lookup, zero-send SMTP handshakes, catch-all detection, proxy rotation, and FastAPI microservice."
+readme = "README.md"
+authors = [{ name = "David Oduobuk", email = "officialoduobuk@gmail.com" }]
+license = { text = "MIT" }
+requires-python = ">=3.9"
+dependencies = [
+    "dnspython>=2.4.0",
+    "fastapi>=0.110.0",
+    "uvicorn>=0.27.0",
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.23.0",
+    "httpx>=0.26.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["gtm_verifier*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
