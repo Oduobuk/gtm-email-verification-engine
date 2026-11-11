@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 from typing import List, Optional
 
+from .smtp_handshake import AsyncSMTPVerifier
 from .worker_pool import ProxyRotator, VerificationEngine
 
 
@@ -38,7 +39,11 @@ def _load_emails(input_path: Path) -> List[str]:
 
 async def _run(args: argparse.Namespace) -> int:
     proxies = [p.strip() for p in args.proxies.split(",") if p.strip()] if args.proxies else []
-    engine = VerificationEngine(proxy_rotator=ProxyRotator(proxies=proxies))
+    smtp_verifier = AsyncSMTPVerifier(helo_domain=args.helo_domain, mail_from=args.mail_from)
+    engine = VerificationEngine(
+        smtp_verifier=smtp_verifier,
+        proxy_rotator=ProxyRotator(proxies=proxies),
+    )
     emails = _load_emails(Path(args.input))
     reports = await engine.verify_batch(
         emails,
@@ -69,6 +74,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--concurrency", type=int, default=50, help="Worker pool concurrency")
     parser.add_argument("--skip-smtp", action="store_true", help="Run syntax + disposable + DNS MX checks only")
     parser.add_argument("--proxies", default="", help="Comma-separated SOCKS5/HTTP proxy URLs")
+    parser.add_argument("--helo-domain", default="verifier.internal", help="SMTP EHLO/HELO hostname")
+    parser.add_argument("--mail-from", default="probe@verifier.internal", help="SMTP MAIL FROM sender address")
     return parser
 
 

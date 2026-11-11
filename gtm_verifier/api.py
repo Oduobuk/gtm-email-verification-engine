@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import os
 from typing import List, Optional
 
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
-from .worker_pool import VerificationEngine
+from .smtp_handshake import AsyncSMTPVerifier
+from .worker_pool import ProxyRotator, VerificationEngine
 
 app = FastAPI(
     title="GTM Email Verification Engine",
@@ -15,7 +17,14 @@ app = FastAPI(
     description="High-throughput async email verification microservice (syntax, MX/SPF/DMARC, zero-send SMTP).",
 )
 
-_engine = VerificationEngine()
+_proxies = [p.strip() for p in os.getenv("GTM_PROXIES", "").split(",") if p.strip()]
+_engine = VerificationEngine(
+    smtp_verifier=AsyncSMTPVerifier(
+        helo_domain=os.getenv("GTM_HELO_DOMAIN", "verifier.internal"),
+        mail_from=os.getenv("GTM_MAIL_FROM", "probe@verifier.internal"),
+    ),
+    proxy_rotator=ProxyRotator(proxies=_proxies),
+)
 
 
 def set_engine(engine: VerificationEngine) -> None:
